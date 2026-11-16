@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}img{max-width:100%}</style>
+<title>성탄 마구간 프레임</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* 레이아웃: 목공소 작업 지시서. 위에서 안을 고르고 3D로 본 뒤, 도면 → 재단 → 주문 → 조립 순서로 내려간다. 인쇄하면 네 안이 차례로 나온다. */
+:root{
+  --bg:#eef1f2; --panel:#ffffff; --ink:#1b2a33; --muted:#5d6c75; --line:#cfd6da;
+  --wood:#dcb87c; --wood-edge:#8a6a3a; --accent:#1c6b52; --dim:#b8372b; --stage:#dfe5e8;
+  --font:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1820; --panel:#17232d; --ink:#e6ecef; --muted:#93a3ad; --line:#2c3b46;
+  --wood:#c9a468; --wood-edge:#f0d9ab; --accent:#5fc49f; --dim:#ff8a7a; --stage:#101c26; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0f1820; --panel:#17232d; --ink:#e6ecef; --muted:#93a3ad; --line:#2c3b46;
+  --wood:#c9a468; --wood-edge:#f0d9ab; --accent:#5fc49f; --dim:#ff8a7a; --stage:#101c26; color-scheme:dark }
+
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.65}
+.wrap{max-width:1080px;margin:0 auto;padding-block:28px 64px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:36px}
+h1{font-size:28px;line-height:1.25;margin:0;font-weight:700;text-wrap:balance}
+h2{font-size:22px;margin:0;font-weight:700;text-wrap:balance}
+h3{font-size:17px;margin:0;font-weight:700}
+h4{font-size:15px;margin:0;font-weight:600}
+p{margin:0;max-width:68ch}
+.lead{color:var(--muted)}
+section,.plan,.blk{display:flex;flex-direction:column;gap:14px;min-width:0}
+.plan{gap:34px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.facts{display:flex;flex-wrap:wrap;gap:6px 26px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.facts b{color:var(--ink);font-weight:600}
+
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tabs button{font-size:15px;padding:9px 16px;font-weight:600}
+.stage{position:relative;background:var(--stage);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+#view3d{width:100%;height:min(60vh,540px);min-height:340px;display:block;touch-action:none}
+.bar{display:flex;flex-wrap:wrap;gap:8px;padding:10px;border-top:1px solid var(--line);background:var(--panel)}
+button{font:inherit;font-size:13px;font-weight:500;color:var(--ink);background:var(--panel);border:1px solid var(--line);
+  border-radius:4px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+#tip{position:absolute;left:10px;top:10px;background:var(--panel);border:1px solid var(--line);border-radius:4px;
+  padding:6px 10px;font-size:13px;pointer-events:none;max-width:calc(100% - 20px)}
+.hint{font-size:13px;color:var(--muted)}
+
+.scroll{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.views{display:grid;grid-template-columns:2000fr 1040fr;min-width:720px}
+.views figure,.fig{margin:0;padding:8px 4px 4px;min-width:0}
+.views figure + figure{border-left:1px solid var(--line)}
+figcaption{font-size:12px;letter-spacing:.06em;color:var(--muted);padding:0 10px 6px;font-weight:600}
+svg{display:block;width:100%;height:auto}
+.w{fill:var(--wood);stroke:var(--wood-edge);stroke-width:3;stroke-linejoin:round}
+.hid{fill:none;stroke:var(--wood-edge);stroke-width:2.5;stroke-dasharray:14 10}
+.d{stroke:var(--dim);stroke-width:2.5;fill:none}
+.dt{fill:var(--dim);font-family:var(--mono);font-size:40px;font-weight:500;text-anchor:middle;
+  paint-order:stroke;stroke:var(--panel);stroke-width:10px;stroke-linejoin:round}
+.nt{fill:var(--ink);font-family:var(--font);font-size:36px;font-weight:600;text-anchor:middle;
+  paint-order:stroke;stroke:var(--panel);stroke-width:10px;stroke-linejoin:round}
+.bolt{fill:var(--panel);stroke:var(--ink);stroke-width:3}
+.ground{stroke:var(--muted);stroke-width:3}
+
+table{border-collapse:collapse;width:100%;min-width:700px;font-size:14px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;letter-spacing:.05em;color:var(--muted);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+.tag{display:inline-block;min-width:22px;text-align:center;font-family:var(--mono);font-weight:600;font-size:12px;
+  padding:1px 5px;border-radius:3px;background:var(--wood);color:#2a1d08}
+.shape svg{width:auto;max-width:230px}
+.pieces{display:flex;flex-wrap:wrap;gap:10px 18px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px}
+.piece{display:flex;flex-direction:column;gap:2px;max-width:100%}
+.piece .cap{font-size:13px;font-weight:600}
+.piece svg{max-width:100%}
+.stock{display:flex;flex-direction:column;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px}
+.board{display:flex;flex-direction:column;gap:5px}
+.board .cap{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--muted)}
+.strip{display:flex;height:34px;border:1px solid var(--wood-edge);border-radius:2px;overflow:hidden;background:repeating-linear-gradient(45deg,transparent 0 6px,var(--line) 6px 7px)}
+.seg{background:var(--wood);border-right:2px solid var(--panel);display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:12px;font-weight:600;color:#2a1d08;overflow:hidden;white-space:nowrap;min-width:0}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.two > div{display:flex;flex-direction:column;gap:10px;min-width:0}
+ul,ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px;max-width:72ch}
+.note{border-left:3px solid var(--accent);padding:2px 0 2px 14px;color:var(--muted);font-size:14px}
+strong{font-weight:600}
+.planhead{display:flex;flex-direction:column;gap:8px;border-top:3px solid var(--ink);padding-top:14px}
+[hidden]{display:none!important}
+button:disabled{opacity:.45;cursor:default}
+#tip.card{width:min(300px,calc(100% - 20px));padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+#tip .ttl{font-weight:700;font-size:14px} #tip .ttl small{font-weight:400;color:var(--muted)}
+#tip .tl{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;color:var(--muted)} #tip .tl b{color:var(--ink);font-family:var(--mono)}
+#stepnav{border-top:1px solid var(--line);background:var(--panel);padding:10px;display:flex;flex-direction:column;gap:8px}
+.navrow{display:flex;flex-wrap:wrap;gap:8px}
+#stepcap{display:flex;flex-direction:column;gap:4px;font-size:13px;max-width:90ch} #stepcap strong{font-size:15px} #stepcap span{color:var(--muted)} #stepcap b{color:var(--ink)}
+.steps{display:flex;flex-direction:column;gap:14px}
+.step{display:flex;flex-wrap:wrap;gap:14px 18px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;align-items:flex-start}
+.simg{flex:0 1 330px;width:330px;max-width:100%;border:1px solid var(--line);border-radius:4px;aspect-ratio:760/520;background:#f2f4f5}
+.sb{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.sb dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}
+.sb dt{font-weight:600;color:var(--accent)} .sb dd{margin:0}
+@media screen{ .plan.off{display:none} }
+@media print{
+  :root,:root[data-theme="dark"],:root:not([data-theme="light"]){
+    --bg:#fff; --panel:#fff; --ink:#111; --muted:#444; --line:#bbb; --wood:#ecd6ab; --wood-edge:#5b4424; --accent:#1c6b52; --dim:#b8372b; --stage:#fff; color-scheme:light}
+  @page{size:A4;margin:12mm}
+  body{font-size:11.5px;line-height:1.5}
+  .wrap{max-width:none;padding:0;gap:18px}
+  .noprint{display:none!important}
+  .plan{break-before:page;gap:18px}
+  .scroll{overflow:visible;border:1px solid var(--line)}
+  .views,table,.fig{min-width:0!important}
+  table{font-size:10.5px} th,td{padding:4px 7px}
+  .note,.hint,.piece .cap,.board .cap,.facts{font-size:inherit}
+  .board,.piece,tr,li,figure,.scroll,.stock,.note{break-inside:avoid}
+  .planhead{break-after:avoid}
+  h2,h3,h4,.blk > p{break-after:avoid}
+  .seg,.w,.tag,.strip{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tools{break-before:page}
+  .step{break-inside:avoid;padding:8px} .simg{flex-basis:250px;width:250px} .sb dl{font-size:inherit}
+}
+</style>
+
+</head>
+<body>
+<div class="noprint" style="position:fixed;right:16px;bottom:16px;z-index:20"><button onclick="window.print()" style="font-size:15px;padding:10px 18px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,.25)">인쇄 / PDF로 저장</button></div>
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <h1>성탄 마구간 프레임</h1>
+    <p class="lead">사진 속 박공지붕 구조물을 목재로 만드는 네 가지 설계안입니다. 안마다 도면, 재단표, 절단 가이드, 주문 목록, 조립 순서가 있고, 끝에 공구와 부재료를 정리했습니다. 치수 단위는 모두 mm입니다.</p>
+  </header>
+
+  <section class="blk">
+    <h2>네 안 비교</h2>
+    <div class="scroll"><table id="compare"></table></div>
+  </section>
+
+  <section class="noprint">
+    <div class="tabs" id="tabs" role="tablist" aria-label="설계안 선택"></div>
+    <div class="stage">
+      <canvas id="view3d" aria-label="구조물 3D 모델"></canvas>
+      <div id="tip">부재에 마우스를 올리거나 누르면 모양과 치수가 보입니다</div>
+      <div class="bar">
+        <button id="b-explode" aria-pressed="false">분해해서 보기</button>
+        <button id="b-color" aria-pressed="false">부재별 색 구분</button>
+        <button id="b-cross" aria-pressed="true">십자가 예시</button>
+        <button id="b-reset">시점 초기화</button>
+        <button id="b-steps" aria-pressed="false">조립 단계 재생</button>
+      </div>
+      <div id="stepnav" hidden>
+        <div class="navrow"><button id="s-prev">◀ 이전</button><button id="s-replay">↻ 다시 재생</button><button id="s-next">다음 ▶</button></div>
+        <div id="stepcap"></div>
+      </div>
+    </div>
+    <p class="hint">드래그로 회전, 휠·두 손가락으로 확대, 오른쪽 버튼 드래그로 이동합니다. 부재에 마우스를 올리면 그 조각의 길이·폭·두께·사선 각도가 그림으로 나오고, 조립 단계 재생을 누르면 레고 설명서처럼 한 단계씩 조각이 붙는 모습을 볼 수 있습니다. 인쇄는 PDF 파일이나 인쇄용 HTML 파일로 하고, 네 안이 모두 차례로 나옵니다.</p>
+  </section>
+
+  <div id="plans" style="display:flex;flex-direction:column;gap:36px"></div>
+
+  <section class="tools">
+    <div class="planhead"><h2>공구와 부재료</h2><p class="lead">네 안에 공통입니다. 안마다 필요한 나사·볼트 수량은 각 안의 주문 목록에 있습니다.</p></div>
+    <div class="two">
+      <div>
+        <h4>재고 표시하는 공구</h4>
+        <ul>
+          <li><strong>줄자 3m 이상, 연필.</strong> 치수는 항상 같은 줄자로 잽니다.</li>
+          <li><strong>직각자 또는 스피드 스퀘어.</strong> 직각선과 45° 선을 긋고, 22.5°는 각도절단기 눈금으로 맞춥니다.</li>
+          <li><strong>자유각도자(선택).</strong> 기둥 윗면 경사를 서까래에 옮겨 그릴 때 편합니다.</li>
+        </ul>
+        <h4>자르는 공구</h4>
+        <ul>
+          <li><strong>각도절단기(마이터쏘) 10인치.</strong> 22.5°와 45°에 멈춤 눈금이 있어 이 설계의 모든 사선을 자를 수 있습니다. 공방 대여나 목재상 재단 서비스로 대신할 수 있습니다.</li>
+          <li><strong>대안: 톱과 마이터 박스, 또는 원형톱과 가이드.</strong> 손톱으로 자르면 사선 면을 사포로 다듬어야 합니다.</li>
+          <li><strong>합판.</strong> 직사각형 두 장뿐이니 재단 주문을 권합니다. 직접 자르면 원형톱이나 직쏘에 직선 가이드를 씁니다.</li>
+        </ul>
+        <h4>뚫고 조이는 공구</h4>
+        <ul>
+          <li><strong>충전 드릴 드라이버.</strong> 임팩트 드라이버가 따로 있으면 나사 박기가 빠릅니다.</li>
+          <li><strong>목공 드릴 비트 3mm.</strong> 모든 나사 자리의 예비 구멍용입니다.</li>
+          <li><strong>목공 드릴 비트 8mm (길이 150 이상).</strong> 볼트 구멍용입니다. 1·2·3안은 세 겹 114mm, 4안은 두 겹 76mm를 한 번에 뚫습니다.</li>
+          <li><strong>접시머리 카운터싱크 비트.</strong> 나사 머리를 면 아래로 묻습니다.</li>
+          <li><strong>십자 비트 PH2.</strong> 4mm 굵기 나사에 맞습니다.</li>
+          <li><strong>스패너 13mm 또는 몽키.</strong> M8 육각 볼트 머리를 잡습니다.</li>
+          <li><strong>F형 클램프 300mm 2~4개.</strong> 본드가 굳는 동안, 그리고 볼트 구멍을 뚫는 동안 물려 둡니다.</li>
+          <li><strong>고무망치.</strong> 빡빡한 기둥을 틈에 넣을 때 씁니다.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>타카 (3·4안에서 선택)</h4>
+        <ul>
+          <li>합판을 틀에 붙일 때 본드를 바르고 타카로 먼저 고정하면 나사를 박는 동안 밀리지 않습니다.</li>
+          <li><strong>전동 또는 에어 타카와 422J 핀(폭 4mm, 길이 22mm)</strong>, 또는 F30 일자핀이면 됩니다. 손 타카(사무용·천갈이용)는 9mm 합판을 뚫지 못합니다.</li>
+          <li>타카 핀만으로는 지붕판이 버티지 못합니다. 나사는 그대로 박습니다. 타카가 없으면 클램프로 대신합니다.</li>
+        </ul>
+        <h4>접착제</h4>
+        <ul>
+          <li><strong>목공용 본드(초산비닐 수지, 흰색) 250g 안팎 1개.</strong> 분해하지 않는 접합면에만 바릅니다. 볼트로 조이는 면과 지붕판을 얹는 면에는 바르지 않습니다.</li>
+          <li>삐져나온 본드는 굳기 전에 젖은 헝겊으로 닦습니다. 굳으면 스테인이 먹지 않아 얼룩이 됩니다.</li>
+          <li>클램프로 30분 이상 물리고, 힘은 하루 지난 뒤에 줍니다.</li>
+        </ul>
+        <h4>마감과 설치 부재료</h4>
+        <ul>
+          <li><strong>사포 #120, #240과 샌딩 블록.</strong> 모서리를 살짝 굴리고 절단면의 거스러미를 없앱니다.</li>
+          <li><strong>수성 스테인이나 바니시(선택).</strong> 바르려면 조립 전에 조각 상태로 바르는 편이 쉽습니다. 붓 50mm, 헝겊.</li>
+          <li><strong>바닥 보호 펠트 패드 8장.</strong> 발판 밑 네 귀에 붙입니다.</li>
+          <li><strong>아이 후크 또는 ㄱ자 후크 3~4개.</strong> 가로대에 십자가, 기둥에 랜턴과 리스를 겁니다.</li>
+          <li><strong>케이블 타이, 투명 테이프.</strong> 전구 선을 서까래 뒤로 정리합니다.</li>
+        </ul>
+        <h4>안전</h4>
+        <ul>
+          <li>보안경, 방진 마스크, 귀마개를 쓰고 자릅니다. 회전하는 톱 앞에서는 장갑을 벗습니다.</li>
+          <li>전구는 열이 적은 LED를 쓰고, 멀티탭과 어댑터는 건초 장식에서 떨어뜨립니다.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="blk">
+      <h4>처음 하는 분을 위한 나사·구멍·본드 기본기</h4>
+      <ol>
+        <li><strong>나사를 박기 전에 항상 예비 구멍을 뚫습니다.</strong> 3mm 비트로, 나사 길이의 3분의 2 깊이까지. 비트에 마스킹 테이프를 감아 깊이를 표시해 두면 편합니다. 예비 구멍 없이 박으면 구조목 끝이 갈라집니다.</li>
+        <li><strong>위에 놓이는 조각은 관통, 아래 조각은 일부만.</strong> 두 조각을 겹쳐 클램프로 물린 채 한 번에 뚫으면 구멍이 어긋나지 않습니다.</li>
+        <li><strong>입구는 카운터싱크로 넓힙니다.</strong> 접시머리가 면과 같거나 1mm 들어가면 됩니다. 너무 깊으면 잡는 힘이 줄어듭니다.</li>
+        <li><strong>나사 길이를 고르는 법.</strong> 위 조각 두께에 25mm 이상을 더합니다. 38mm 두 겹에는 4×65(끝이 뒷면까지 11mm 남아 뚫고 나오지 않음), 9mm 합판에는 4×40을 씁니다. 굵기 4mm 나사에는 PH2 십자 비트가 맞습니다.</li>
+        <li><strong>가장자리에서 20mm 이상, 나사끼리 40mm 이상 띄웁니다.</strong> 같은 나뭇결 위에 나사를 한 줄로 세우지 말고 조금씩 엇갈리게 놓습니다.</li>
+        <li><strong>드릴은 곧게, 천천히.</strong> 드릴 클러치(숫자 링)를 중간쯤에 맞추고, 나사 머리가 면에 닿으면 멈춥니다. 헛돌면 빼내고 15mm 옆에 새로 박습니다.</li>
+        <li><strong>본드는 한쪽 면에 얇게 지그재그로.</strong> 조각을 맞대고 살짝 비벼 펴 준 뒤 클램프나 나사로 누릅니다. 가장자리로 실처럼 삐져나오면 양이 맞습니다. 젖은 헝겊으로 바로 닦습니다.</li>
+        <li><strong>마구리(자른 끝면)는 본드를 빨아들입니다.</strong> 한 번 바르고 1분 뒤 한 번 더 바릅니다.</li>
+        <li><strong>분해할 자리에는 본드를 바르지 않습니다.</strong> 기둥과 지붕 틀이 만나는 곳, 지붕판을 얹는 곳, 뒤 연결대가 그렇습니다.</li>
+        <li><strong>볼트 구멍은 8mm로 곧게.</strong> 조각을 제자리에 클램프로 물린 채 한 번에 뚫고, 뒤쪽에 자투리 나무를 대면 구멍 끝이 뜯기지 않습니다. 볼트 머리 → 와셔 → 목재 → 와셔 → 나비너트 순서입니다.</li>
+        <li><strong>조이기 전에 잽니다.</strong> 나사를 박기 전에 직각자와 줄자로 한 번 더 확인합니다. 본드가 굳기 전 10분 동안은 고칠 수 있습니다.</li>
+      </ol>
+    </div>
+    <div class="blk">
+      <h4>절단 공통 요령</h4>
+      <ol>
+        <li>원목 끝은 거칠거나 갈라져 있습니다. 5mm쯤 먼저 잘라 깨끗한 직각 면을 만든 뒤 거기서부터 잽니다.</li>
+        <li>원목 배치도의 왼쪽부터 차례로 자릅니다. 한 조각을 자른 뒤 다음 조각을 다시 재야 톱날 두께만큼 어긋나지 않습니다.</li>
+        <li>톱날은 선의 버리는 쪽을 지나가게 합니다. 선을 반으로 가르면 1.5mm 짧아집니다.</li>
+        <li>사선 조각은 긴 쪽 길이를 재서 표시하고, 긴 쪽 끝점에서 사선이 시작되게 자릅니다. 89mm 넓은 면을 바닥에 눕히고 톱 테이블을 돌려 각도를 맞춥니다.</li>
+        <li>같은 길이가 여러 개면 첫 조각을 정확히 자른 뒤 그것을 본으로 삼거나 멈춤목을 고정해 놓고 자릅니다.</li>
+        <li>가새 G는 양끝 45°가 서로 반대 방향인 사다리꼴입니다. 한쪽을 자른 뒤 원목을 뒤집어 다음 사선을 자르면 버리는 조각 없이 이어서 나옵니다.</li>
+        <li>자른 조각에는 바로 연필로 기호(A, B…)를 적어 둡니다.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const R=Math.PI/180, PITCH=22.5, s=Math.sin(PITCH*R), c=Math.cos(PITCH*R), t=Math.tan(PITCH*R);
+const W=89, T=38, H=1300, PIN=411, POUT=500, PTOP=1115, PLY=9;
+const CY0=1061, CY1=1150, CHALF=352.5, KEYS=151;
+const f=n=>Math.round(n).toLocaleString('en-US');
+const pt=(a,o)=>[a*c-o*s, H-a*s-o*c];
+const mx=p=>p.map(([x,y])=>[-x,y]);
+const rect=(x0,y0,x1,y1)=>[[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
+const band=(a0,a1,o0,o1)=>[pt(a0,o0),pt(a1,o0),pt(a1,o1),pt(a0,o1)];
+const boltXY=[433,478].map(x=>[x,H-(W/2)/c-t*x]);
+const HUE={A:'#c98f4e',B:'#3f8f6f',C:'#c8553d',D:'#7a5ea8',E:'#d9a323',F:'#4f7fb5',G:'#d47a9a',H:'#6f7f86',I:'#2f9aa8',J:'#2f9aa8',K:'#8d6e4a',L:'#a9b86a',M:'#3f8f6f',N:'#2f9aa8'};
+const SQ='양끝 직각';
+
+function build(n){
+  const RL=[0,758,758,720,700][n], FOOT=[0,600,600,600,500][n], BR=[0,260,260,260,240][n];
+  const DEPTH=[0,114,600,600,400][n], LP=[0,RL,RL,RL+T,750][n];
+  const top=n>=3?PLY:0, HALF=LP*c+top*s, HT=H+top*c;
+  const rafter=[pt(0,0),pt(RL,0),pt(RL,W),pt(W*t,W)];
+  const key=mx([pt(0,0),pt(KEYS,0),pt(KEYS,W),pt(-W,W)]);
+  const post=[[PIN,T],[POUT,T],[POUT,PTOP-W*t],[PIN,PTOP]];
+  const a=BR/Math.SQRT2, b=a-W*Math.SQRT2, brace=[[T/2,T+a],[T/2+a,T],[T/2+b,T],[T/2,T+b]];
+  const ZO=DEPTH/2-T, P=[];
+  const add=(k,grp,st,plane,pts,t0,t1)=>P.push({k,grp,st,plane,pts,t0,t1});
+  [1,-1].forEach(sd=>{ const m=sd>0?(p=>p):mx, pg=sd>0?'pr':'pl', pn=sd>0?'nr':'nl';
+    if(n<4){ add('B','roof','T0','xy',m(rafter),T/2,T/2+T); add('B','roof','T2','xy',m(rafter),-T/2-T,-T/2);
+      add('E','roof','T1','xy',m(band(RL-100,RL,0,W)),-T/2,T/2); }
+    else add('B','roof','T0','xy',m(rafter),T/2,T/2+T);
+    add('A',pg,'P0','xy',m(post),-T/2,T/2);
+    add('F',pg,'P0','xz',sd>0?rect(PIN,-FOOT/2,POUT,FOOT/2):rect(-POUT,-FOOT/2,-PIN,FOOT/2),0,T);
+    const cx=sd*(PIN+POUT)/2; add('G',pg,'P1','zy',brace,cx-T/2,cx+T/2); add('G',pg,'P1','zy',mx(brace),cx-T/2,cx+T/2);
+    if(n===2){ add('B','roof','X1','xy',m(rafter),ZO,ZO+T); add('B','roof','X1','xy',m(rafter),-ZO-T,-ZO);
+      [60,360,700].forEach(a0=>{const q=m(band(a0,a0+T,0,W));add('I','roof','X0','xy',q,1.5*T,ZO);add('I','roof','X0','xy',q,-ZO,-1.5*T);}); }
+    if(n===3){ add('B',pn,'N0','xy',m(rafter),ZO,ZO+T); add('B',pn,'N0','xy',m(rafter),-ZO-T,-ZO);
+      add('J',pn,'N0','xy',m(band(RL,LP,0,W)),-DEPTH/2,DEPTH/2);
+      const kq=m(band(60,440,0,T)); add('K',pn,'N1','xy',kq,59,59+T); add('K',pn,'N1','xy',kq,-59-T,-59);
+      add('L',pn,'N1','xy',m(band(0,LP,-PLY,0)),-DEPTH/2,DEPTH/2); }
+    if(n===4){ const rail=m([pt(0,0),pt(LP,0),pt(LP,T),pt(T*t,T)]);
+      add('M',pn,'N0','xy',rail,ZO,ZO+T); add('M',pn,'N0','xy',rail,-ZO-T,-ZO);
+      add('N',pn,'N0','xy',m(band(LP-T,LP,0,T)),-ZO,ZO);
+      add('K',pn,'N1','xy',m(band(60,360,0,T)),59,59+T);
+      add('L',pn,'N1','xy',m(band(0,LP,-PLY,0)),-DEPTH/2,DEPTH/2); }
+  });
+  add('C','roof','T1','xy',rect(-CHALF,CY0,CHALF,CY1),-T/2,T/2);
+  add('D','roof','T1','xy',key,-T/2,T/2);
+  add('H','rail','R','xz',rect(-POUT,-FOOT/2,POUT,-FOOT/2+(n===4?T:W)),T,2*T);
+
+  const X='2×4', Q='2×2', I={};
+  I.A={mat:X,name:'기둥',qty:2,len:PTOP-T,short:PTOP-T-W*t,a2:22.5,cut:'윗끝 22.5° 사선, 밑끝 직각'};
+  I.B={mat:X,name:n===4?'중심 서까래':'서까래',qty:[0,4,8,8,2][n],len:RL,short:RL-W*t,a2:22.5,cut:'꼭대기 쪽 22.5° 사선, 처마 쪽 직각'};
+  I.C={mat:X,name:'가로대',qty:1,len:CHALF*2,cut:SQ};
+  I.D={mat:X,name:'꼭대기 고정목',qty:1,len:KEYS+W,short:KEYS,a2:45,cut:'한쪽 45° 사선, 한쪽 직각'};
+  if(n<4) I.E={mat:X,name:'끝 채움목',qty:2,len:100,cut:SQ};
+  I.F={mat:X,name:'발판',qty:2,len:FOOT,cut:SQ};
+  I.G={mat:X,name:'가새',qty:4,len:BR,short:BR-2*W,a1:45,a2:45,cut:'양끝 45° 사선 (사다리꼴)'};
+  I.H={mat:n===4?Q:X,h:n===4?T:W,name:'뒤 연결대',qty:1,len:1000,cut:SQ};
+  if(n===2) I.I={mat:X,name:'지붕 살',qty:12,len:ZO-1.5*T,cut:SQ};
+  if(n===3){ I.J={mat:X,name:'처마 마감대',qty:2,len:DEPTH,cut:SQ};
+    I.K={mat:Q,h:T,name:'지붕판 고정 각재',qty:4,len:380,cut:SQ};
+    I.L={mat:'합판 9T',h:DEPTH,name:'지붕 합판',qty:2,len:LP,cut:`${DEPTH}×${LP} 직사각형`}; }
+  if(n===4){ I.M={mat:Q,h:T,name:'지붕판 옆 테',qty:4,len:LP,short:LP-T*t,a2:22.5,cut:'꼭대기 쪽 22.5° 사선, 처마 쪽 직각'};
+    I.N={mat:Q,h:T,name:'지붕판 처마 테',qty:2,len:DEPTH-2*T,cut:SQ};
+    I.K={mat:Q,h:T,name:'지붕판 고정 각재',qty:2,len:300,cut:SQ};
+    I.L={mat:'합판 9T',h:DEPTH,name:'지붕 합판',qty:2,len:LP,cut:`${DEPTH}×${LP} 직사각형`}; }
+  const boards=[
+    0,
+    [[X,'BBBBDEE'],[X,'AAHG'],[X,'FFCGGG']],
+    [[X,'BBBBDEE'],[X,'AAHG'],[X,'FFCGGGIIII'],[X,'BBBBII'],[X,'IIIIII']],
+    [[X,'BBBBF'],[X,'BBBBF'],[X,'AAHG'],[X,'JJCDEEGGG'],[Q,'KKKK']],
+    [[X,'AABB'],[X,'CDFFGGGG'],[Q,'MMMMN'],[Q,'HNKK']]
+  ][n];
+  return {n,RL,FOOT,BR,DEPTH,LP,HALF,HT,P,INFO:I,boards,eb:pt(n===3?LP:RL,W),
+    bolt:n===4?{z:T/2,len:100}:{z:0,len:130}, rafter};
+}
+
+/* 나사 자리: 단계 그림과 3D 재생에 점으로 표시한다 */
+function fasteners(p){
+  const F={}, push=(k,pos,dir,ty)=>(F[k]=F[k]||[]).push({p:pos,d:dir,t:ty});
+  const n=p.n, RL=p.RL, LP=p.LP, ZO=p.DEPTH/2-T, z1=-T/2, z2=-1.5*T;
+  [1,-1].forEach(sd=>{
+    [[300,1105],[250,1125],[200,1140]].forEach(([x,y])=>{push('T1',[sd*x,y,z1],[0,0,1],'65'); if(n<4)push('T2',[sd*(x-14),y-10,z2],[0,0,1],'65');});
+    if(n<4)[[RL-75,30],[RL-30,60]].forEach(([a,o])=>{const q=pt(a,o),r=pt(a+8,o-12);push('T1',[sd*q[0],q[1],z1],[0,0,1],'65');push('T2',[sd*r[0],r[1],z2],[0,0,1],'65');});
+    [433,478].forEach(x=>push('P0',[sd*x,0,0],[0,1,0],'65'));
+    const cx=sd*(PIN+POUT)/2, a=p.BR/Math.SQRT2;
+    [1,-1].forEach(fz=>[0.08,0.2,0.8,0.92].forEach(u=>push('P1',[cx,T+a*(1-u),fz*(T/2+a*u)],[0,-0.707,-0.707*fz],'65')));
+    [440,472].forEach((x,i)=>push('R',[sd*x,2*T,-p.FOOT/2+(n===4?19:(i?62:27))],[0,-1,0],'65'));
+    const dn=[-s*sd,-c,0];
+    [1,-1].forEach(fz=>{
+      if(n===2)[60,360,700].forEach(a0=>{const q=pt(a0+19,44.5);
+        push('X0',[sd*q[0],q[1]+20,fz*(1.5*T+30)],[0,-0.45,-0.89*fz],'65');push('X0',[sd*q[0],q[1]-20,fz*(1.5*T+30)],[0,0.45,-0.89*fz],'65');
+        [25,64].forEach(o=>{const r=pt(a0+19,o);push('X1',[sd*r[0],r[1],fz*(ZO+T)],[0,0,-fz],'90');});});
+      if(n===3){[25,64].forEach(o=>{const q=pt(LP,o);push('N0',[sd*q[0],q[1],fz*(ZO+T/2)],[-c*sd,s,0],'65');});
+        [80,230,380,530,680].forEach(a0=>{const q=pt(a0,-PLY);push('N1',[sd*q[0],q[1],fz*(ZO+T/2)],dn,'40');});
+        [120,250,380].forEach(a0=>{const q=pt(a0,-PLY);push('N1',[sd*q[0],q[1],fz*(59+T/2)],dn,'40');});
+        [200,560].forEach(a0=>{const q=pt(a0,-PLY);push('MOUNT',[sd*q[0],q[1],fz*T],dn,'40');});}
+      if(n===4){[LP-28,LP-10].forEach(a0=>{const q=pt(a0,19);push('N0',[sd*q[0],q[1],fz*(ZO+T)],[0,0,-fz],'65');});
+        [80,230,380,530,680].forEach(a0=>{const q=pt(a0,-PLY);push('N1',[sd*q[0],q[1],fz*(ZO+T/2)],dn,'40');});}
+    });
+    if(n===3)[-150,-50,50,150].forEach(z=>{const q=pt(RL+19,-PLY);push('N1',[sd*q[0],q[1],z],dn,'40');});
+    if(n===4){[-100,0,100].forEach(z=>{const q=pt(LP-19,-PLY);push('N1',[sd*q[0],q[1],z],dn,'40');});
+      [110,210,310].forEach(a0=>{const q=pt(a0,-PLY);push('N1',[sd*q[0],q[1],59+T/2],dn,'40');});
+      [150,400,640].forEach(a0=>{const q=pt(a0,-PLY);push('MOUNT',[sd*q[0],q[1],T],dn,'40');});}
+  });
+  [pt(60,30),pt(120,60)].map(q=>[-q[0],q[1]]).concat([[35,1262],[70,1250]]).forEach(([x,y])=>{
+    push('T1',[x,y,z1],[0,0,1],'65'); if(n<4)push('T2',[x+(x<0?12:-8),y-12,z2],[0,0,1],'65');});
+  return F;
+}
+
+const TXT={
+1:{title:'1안 · 한 겹 박공틀',lead:'2×4 한 가지로 만드는 가장 단순한 안입니다. 지붕이 114mm 두께의 납작한 삼각 틀이라 사진처럼 선으로 된 집 모양이 됩니다.',
+ mats:'2×4 3본',weight:'약 15kg',level:'쉬움',feat:'지붕이 납작한 틀, 재료 한 가지',
+ design:['<strong>지붕 틀.</strong> 서까래 두 겹(앞·뒤) 사이에 38mm 틈을 둔 샌드위치 구조입니다. 그 틈에 기둥 윗부분이 끼워지고, 한쪽에 M8 볼트 두 개로 조입니다. 가로대와 꼭대기 고정목, 끝 채움목이 같은 틈 안에서 두 겹을 묶습니다.','<strong>기둥과 발.</strong> 기둥마다 600mm 발판과 앞뒤 가새가 붙어 혼자 서고, 뒤쪽 바닥의 연결대가 두 발을 묶습니다.'],
+ order:[['구조목 SPF 2×4 (건조목)','38×89×3,600','3본 (여유 포함 4본)','전체 부재'],['육각 또는 캐리지 볼트','M8×130','4개','지붕 틀과 기둥 체결'],['평와셔','M8','8개','볼트 양쪽'],['나비너트','M8','4개','손으로 풀고 조이기'],['목재용 나사 (접시머리)','4×65','52개 사용 (100개 1통)','지붕 틀 28, 발·가새 20, 연결대 4'],['목공 본드','소형','1개','지붕 틀 접합면']],
+ undo:'분해는 나비너트 4개와 연결대 나사 4개를 풉니다. 지붕 틀, 기둥 두 개, 연결대 네 조각이 됩니다.',
+ store:'지붕 틀 1,401×373×114, 기둥 1,115×600×89 두 개, 연결대 1,000.',
+ notes:['지붕이 선으로만 되어 있어 가랜드를 서까래 위에 얹을 자리는 114mm 폭입니다.']},
+2:{title:'2안 · 사다리 지붕',lead:'1안의 지붕 틀 앞뒤로 살을 내밀고 바깥 서까래를 붙여 지붕 깊이를 발판과 같은 600mm로 넓힌 안입니다. 2×4 한 가지만 씁니다.',
+ mats:'2×4 5본',weight:'약 23kg',level:'보통 (비스듬한 나사)',feat:'깊이 600 사다리형 지붕, 위가 뚫림',
+ design:['<strong>중심 틀.</strong> 1안과 같은 샌드위치 틀입니다. 기둥이 틈에 끼워지고 볼트로 조입니다.','<strong>지붕 살과 바깥 서까래.</strong> 중심 틀 앞뒤로 지붕 살 I(205mm)를 경사마다 세 개씩 내밀고, 그 끝에 바깥 서까래를 붙입니다. 위가 뚫린 사다리 모양이라 가랜드와 전구를 살에 걸칠 수 있습니다. 지붕은 한 덩어리로 보관합니다.'],
+ order:[['구조목 SPF 2×4 (건조목)','38×89×3,600','5본 (여유 포함 6본)','전체 부재'],['육각 또는 캐리지 볼트','M8×130','4개','중심 틀과 기둥 체결'],['평와셔','M8','8개','볼트 양쪽'],['나비너트','M8','4개','손으로 풀고 조이기'],['목재용 나사 (접시머리)','4×65','76개 사용 (100개 1통)','중심 틀 28, 지붕 살 24, 발·가새 20, 연결대 4'],['목재용 나사 (접시머리)','4.5×90','24개','바깥 서까래에서 지붕 살 마구리로'],['목공 본드','소형','1개','중심 틀과 지붕 살 접합면']],
+ undo:'분해는 나비너트 4개와 연결대 나사 4개를 풉니다. 지붕 한 덩어리, 기둥 두 개, 연결대가 됩니다.',
+ store:'지붕 1,401×373×600, 기둥 1,115×600×89 두 개, 연결대 1,000.',
+ notes:['지붕이 부피가 크고 무겁습니다. 보관 자리가 좁으면 3안이나 4안이 낫습니다.']},
+3:{title:'3안 · 합판 지붕 (깊이 600)',lead:'2×4 뼈대에 9mm 합판 지붕판 두 장을 얹는 안입니다. 막힌 지붕과 처마 마감대가 있어 가장 집다운 모습이고, 모든 조각이 납작하게 보관됩니다.',
+ mats:'2×4 4본, 2×2 1본, 합판 2장',weight:'약 27kg',level:'보통',feat:'막힌 지붕, 두꺼운 처마, 튼튼함',
+ design:['<strong>중심 틀.</strong> 2×4 서까래 두 겹 사이에 38mm 틈을 둔 삼각 틀입니다. 기둥 윗부분이 틈에 끼워지고 한쪽에 M8 볼트 두 개로 조입니다.','<strong>지붕판.</strong> 경사마다 한 장씩, 9mm 합판 밑에 앞뒤 박공 서까래와 처마 마감대를 붙인 뚜껑입니다. 밑면의 2×2 각재 두 줄이 중심 틀을 양옆에서 물어 자리를 잡아 주고, 위에서 나사 4개로 고정합니다.'],
+ order:[['구조목 SPF 2×4 (건조목)','38×89×3,600','4본 (여유 포함 5본)','기둥, 서까래, 발, 처마 마감대'],['구조목 SPF 2×2 각재','38×38×3,600','1본','지붕판 고정 각재 (2,400짜리도 충분)'],['합판 (일반 또는 자작)','9T, 600×758 재단','2장','지붕판'],['육각 또는 캐리지 볼트','M8×130','4개','중심 틀과 기둥 체결'],['평와셔','M8','8개','볼트 양쪽'],['나비너트','M8','4개','손으로 풀고 조이기'],['목재용 나사 (접시머리)','4×65','60개 사용 (100개 1통)','중심 틀 28, 발·가새 20, 연결대 4, 처마 마감대 8'],['목재용 나사 (접시머리)','4×40','48개 사용 (100개 1통)','합판을 서까래·각재에 40, 지붕판을 중심 틀에 8'],['타카 핀 (선택)','422J','1갑','합판 가고정'],['목공 본드','소형','1개','합판 접착면, 중심 틀']],
+ undo:'분해는 지붕판 나사 8개, 나비너트 4개, 연결대 나사 4개를 푸는 순서입니다. 가장 무거운 조각이 6kg 남짓입니다.',
+ store:'지붕판 758×600×98 두 장, 중심 틀 1,331×358×114, 기둥 1,115×600×89 두 개, 연결대 1,000.',
+ notes:['지붕판 두 장은 꼭대기에서 맞닿기만 합니다. 용마루와 정면 꼭짓점에 가는 틈이 보일 수 있는데, 가랜드나 별 장식으로 가려집니다.','2×2 각재 대신 한치각(실치수 약 28~30mm)을 써도 됩니다.']},
+4:{title:'4안 · 슬림 지붕 (깊이 400)',lead:'사진의 얇은 지붕선을 살린 안입니다. 2×4 한 겹 뼈대에, 2×2 테를 두른 얇은 합판 지붕판을 얹습니다. 조각 수와 무게가 가장 적고 모두 납작하게 보관됩니다.',
+ mats:'2×4 2본, 2×2 2본, 합판 2장',weight:'약 17kg',level:'쉬움',feat:'처마 두께 47mm의 얇은 지붕, 가볍고 조각이 적음',
+ design:['<strong>뼈대는 두 겹뿐입니다.</strong> 앞 겹은 중심 서까래 두 개, 뒤 겹은 기둥과 가로대와 꼭대기 고정목입니다. 기둥 윗부분이 서까래 뒷면에 겹쳐지고 M8 볼트 두 개로 조입니다. 1~3안의 세 겹 틀에서 서까래 한 겹을 뺀 구조라 조각이 적습니다.','<strong>지붕판.</strong> 400×750 합판 밑에 2×2 각재로 ㄷ자 테를 둘렀습니다. 정면에서 보이는 처마 두께가 47mm라 사진처럼 얇은 지붕선이 나옵니다. 지붕판 밑의 고정 각재 K를 중심 서까래 앞면에 붙여 자리를 잡고, 위에서 나사 3개로 고정합니다.','<strong>보이는 모습.</strong> 2×4 중심 서까래는 지붕판 가운데 밑에 숨어 있습니다. 어른 눈높이에서는 지붕 윗면과 얇은 테만 보이고, 아래에서 올려다보면 서까래가 보입니다.'],
+ order:[['구조목 SPF 2×4 (건조목)','38×89×3,600','2본 (여유 포함 3본)','기둥, 중심 서까래, 가로대, 발, 가새'],['구조목 SPF 2×2 각재','38×38×3,600','2본','지붕판 테, 고정 각재, 연결대'],['합판 (일반 또는 자작)','9T, 400×750 재단','2장','지붕판'],['육각 또는 캐리지 볼트','M8×100','4개','서까래와 기둥 체결'],['평와셔','M8','8개','볼트 양쪽'],['나비너트','M8','4개','손으로 풀고 조이기'],['목재용 나사 (접시머리)','4×65','42개 사용 (100개 1통)','뼈대 10, 발·가새 20, 연결대 4, 지붕판 테 8'],['목재용 나사 (접시머리)','4×40','38개 사용 (100개 1통)','합판을 테·각재에 32, 지붕판을 서까래에 6'],['타카 핀 (선택)','422J','1갑','합판 가고정'],['목공 본드','소형','1개','합판 접착면, 뼈대']],
+ undo:'분해는 지붕판 나사 6개, 나비너트 4개, 연결대 나사 4개를 푸는 순서입니다. 가장 무거운 조각이 5kg 안팎입니다.',
+ store:'지붕판 750×400×47 두 장, 뼈대 1,293×350×76, 기둥 1,115×500×89 두 개, 연결대 1,000.',
+ notes:['지붕판 두 장은 꼭대기에서 맞닿기만 합니다. 용마루에 가는 틈이 보일 수 있는데, 가랜드나 별 장식으로 가려집니다.','뼈대가 한 겹이라 1~3안보다 좌우 흔들림이 조금 더 있습니다. 볼트 구멍을 8mm로 딱 맞게 뚫고 단단히 조이세요.','2×2 각재 대신 한치각(실치수 약 28~30mm)을 쓰면 처마가 더 얇아집니다. 그때는 N 길이를 400에서 각재 두께 두 배를 뺀 값으로 바꿉니다.']}
+};
+const HOLE3='나사 자리마다 3mm 비트로 예비 구멍을 뚫고, 입구를 카운터싱크로 살짝 넓혀 나사 머리가 면과 같아지게 합니다.';
+const NOGLUE='바르지 않습니다. 분해할 자리입니다.';
+function stepsFor(p){
+  const n=p.n, S=[], tri=n<4, TR=tri?['T0','T1','T2']:['T0','T1'], RX=n===2?['X0','X1']:[], PO=['P0','P1'];
+  const tw=f(2*p.RL*c), gap=f(p.RL*c-POUT), frame=tri?'중심 틀':'뼈대', layers=tri?'세 겹(114mm)':'두 겹(76mm)';
+  if(tri){
+    S.push({title:(n===1?'지붕 틀':'중심 틀')+' ① 가운데 층 붙이기',show:['T0'],add:['T1'],fas:['T1'],cam:'roofback',from:[0,0,-280],
+      parts:'서까래 B 2개(바닥에 깔림), 가로대 C, 꼭대기 고정목 D, 끝 채움목 E 2개',
+      how:`평평한 바닥에 서까래 B 두 개를 보이는 면이 아래로 가게 놓고 사선 끝끼리 맞댑니다. 양쪽 직각 끝의 윗모서리 사이가 ${tw}mm면 각도가 맞습니다. D는 사선 끝을 꼭대기에 맞춰 한쪽 서까래와 나란히, C는 밑면이 꼭대기에서 수직으로 239mm 아래·좌우 가운데, E는 서까래의 직각 끝에 맞춰 올립니다. 그림은 뒷면에서 본 모습입니다.`,
+      glue:'C, D, E가 서까래에 닿는 면 전체에 얇게 바릅니다.',
+      hole:HOLE3+' 깊이는 55mm쯤.',
+      screw:'4×65 14개. C 양끝에 3개씩, D에 4개(서까래마다 2개), E에 2개씩. 조각 가장자리에서 20mm 이상 안쪽에 박습니다.'});
+    S.push({title:(n===1?'지붕 틀':'중심 틀')+' ② 서까래 덮기',show:['T0','T1'],add:['T2'],fas:['T2'],cam:'roofback',from:[0,0,-280],
+      parts:'서까래 B 2개',
+      how:'C 끝과 E 사이의 빈 자리가 기둥이 들어갈 틈입니다. 여기에 기둥 자투리와 명함 한 장을 끼워 둔 채로, 서까래 B 두 개를 아래 서까래와 정확히 겹치게 덮고 클램프로 물립니다. 나사를 다 박은 뒤 자투리를 빼냅니다.',
+      glue:'C, D, E의 윗면에 바릅니다. 기둥이 들어갈 틈에는 바르지 않습니다.',
+      hole:HOLE3+' 앞 단계 나사와 겹치지 않게 10mm쯤 비켜 뚫습니다.',
+      screw:'4×65 14개. 앞 단계와 같은 배치로 C 양끝 3개씩, D 4개, E 2개씩.'});
+  } else S.push({title:'뼈대 만들기',show:['T0'],add:['T1'],fas:['T1'],cam:'roofback',from:[0,0,-280],
+      parts:'중심 서까래 B 2개(바닥에 깔림), 가로대 C, 꼭대기 고정목 D',
+      how:`평평한 바닥에 서까래 B 두 개를 보이는 면이 아래로 가게 놓고 사선 끝끼리 맞댑니다. 양쪽 직각 끝의 윗모서리 사이가 ${tw}mm면 각도가 맞습니다. D는 사선 끝을 꼭대기에 맞춰 한쪽 서까래와 나란히, C는 밑면이 꼭대기에서 수직으로 239mm 아래·좌우 가운데에 올립니다. 그림은 뒷면에서 본 모습입니다.`,
+      glue:'C와 D가 서까래에 닿는 면 전체에 얇게 바릅니다.',
+      hole:HOLE3+' 깊이는 55mm쯤.',
+      screw:'4×65 10개. C 양끝에 3개씩, D에 4개(서까래마다 2개). 가장자리에서 20mm 이상 안쪽.'});
+  if(n===2){
+    S.push({title:'지붕 살 붙이기',show:TR,add:['X0'],fas:['X0'],cam:'rooftop',from:'z',
+      parts:'지붕 살 I 12개',
+      how:'중심 틀을 세워 받쳐 놓습니다. 서까래 윗면을 따라 꼭대기에서 60, 360, 700mm 지점에 연필로 표시하고, 그 선에서 처마 쪽으로 살 I를 직각으로 댑니다. 살의 윗면과 서까래 윗면을 맞춥니다.',
+      glue:'살의 마구리(자른 끝면)에 바르고 1분 뒤 한 번 더 바릅니다. 마구리는 본드를 많이 먹습니다.',
+      hole:'살 끝에서 30mm 떨어진 옆면에서 중심 틀 쪽으로 30°쯤 기울여 3mm 구멍을 뚫습니다. 살마다 위아래 2곳.',
+      screw:'4×65 24개. 살마다 2개씩 비스듬히 박습니다. 살이 밀리지 않게 손이나 클램프로 눌러 줍니다.'});
+    S.push({title:'바깥 서까래 붙이기',show:TR.concat(['X0']),add:['X1'],fas:['X1'],cam:'roof',from:'z',
+      parts:'서까래 B 4개',
+      how:'살 끝에 바깥 서까래 B를 대고, 중심 틀 서까래와 윗면·꼭대기·처마 끝이 나란한지 확인한 뒤 클램프로 물립니다. 좌우 바깥 서까래의 사선 끝끼리도 맞닿게 합니다.',
+      glue:'살의 바깥쪽 마구리에 바릅니다.',
+      hole:'서까래 바깥면에서 살 중심을 향해 3mm로 서까래를 관통하고 살 마구리 속 40mm까지 뚫습니다. 살마다 2곳, 입구는 카운터싱크.',
+      screw:'4.5×90 24개. 살마다 2개씩 곧게 박습니다.'});
+  }
+  if(n===3){
+    S.push({title:'지붕판 틀 만들기 (두 장)',show:[],add:['N0'],fas:['N0'],cam:'rooftop',from:[0,220,0],
+      parts:'서까래 B 4개, 처마 마감대 J 2개',
+      how:'지붕판 한 장마다 서까래 B 두 개를 바깥면 기준 600mm 폭으로 나란히 세우고, 직각으로 자른 끝에 처마 마감대 J를 가로로 대어 ㄷ자 틀을 만듭니다. 사선 끝이 열린 쪽(꼭대기)입니다. 직각자로 모서리가 90°인지 확인합니다.',
+      glue:'서까래의 직각 마구리에 바릅니다.',
+      hole:'J 바깥면에서 서까래 마구리 중심으로 3mm 구멍, J를 관통해 마구리 속 25mm까지. 서까래마다 2곳.',
+      screw:'4×65 8개. J에서 서까래 마구리로 2개씩.'});
+    S.push({title:'합판과 고정 각재 붙이기',show:['N0'],add:['N1'],fas:['N1'],cam:'rooftop',from:[0,260,0],ghost:'L',
+      parts:'지붕 합판 L 2장, 고정 각재 K 4개',
+      how:'틀 윗면에 합판 L을 덮어 네 변을 틀 바깥에 맞춥니다. 타카가 있으면 모서리부터 몇 군데 잡아 둡니다. 나사를 박은 뒤 뒤집어서, 고정 각재 K 두 개를 합판 긴 변에서 203mm 안쪽, 윗변에서 60mm 내려온 자리에 서까래와 나란히 붙입니다. 두 K 사이가 118mm면 맞습니다. 그림은 합판을 반투명하게 그렸습니다.',
+      glue:'틀 윗면 전체와 K의 한 면에 바릅니다.',
+      hole:'합판 위에서 3mm로 뚫고 카운터싱크는 얕게(합판이 9mm뿐입니다). 서까래 위 나사는 합판 가장자리에서 19mm 안쪽.',
+      screw:'4×40 40개. 한 장에 서까래 따라 5개씩(150mm 간격), J에 4개, K마다 3개(합판 위에서 K로).'});
+  }
+  if(n===4){
+    S.push({title:'지붕판 테 만들기 (두 장)',show:[],add:['N0'],fas:['N0'],cam:'rooftop',from:[0,220,0],
+      parts:'옆 테 M 4개, 처마 테 N 2개',
+      how:'지붕판 한 장마다 옆 테 M 두 개를 바깥면 기준 400mm 폭으로 나란히 놓고, 직각 끝 사이에 처마 테 N을 끼워 ㄷ자 테를 만듭니다. 사선 끝이 열린 쪽(꼭대기)입니다. 직각자로 모서리가 90°인지 확인합니다.',
+      glue:'N의 양쪽 마구리에 바릅니다.',
+      hole:'M 바깥면에서 N 마구리 중심으로 3mm 구멍, M을 관통해 마구리 속 25mm까지. 모서리마다 2곳.',
+      screw:'4×65 8개. M 바깥에서 N 마구리로 2개씩.'});
+    S.push({title:'합판과 고정 각재 붙이기',show:['N0'],add:['N1'],fas:['N1'],cam:'rooftop',from:[0,260,0],ghost:'L',
+      parts:'지붕 합판 L 2장, 고정 각재 K 2개',
+      how:'테 윗면에 합판 L을 덮어 네 변을 테 바깥에 맞춥니다. 타카가 있으면 모서리부터 몇 군데 잡아 둡니다. 나사를 박은 뒤 뒤집어서, 고정 각재 K를 앞쪽 긴 변에서 103mm 안쪽, 윗변에서 60mm 내려온 자리에 M과 나란히 붙입니다. 두 장은 좌우 대칭이니 K가 둘 다 앞쪽에 오는지 확인합니다. 그림은 합판을 반투명하게 그렸습니다.',
+      glue:'테 윗면 전체와 K의 한 면에 바릅니다.',
+      hole:'합판 위에서 3mm로 뚫고 카운터싱크는 얕게(합판이 9mm뿐입니다). 테 위 나사는 합판 가장자리에서 19mm 안쪽.',
+      screw:'4×40 32개. 한 장에 M 따라 5개씩(150mm 간격), N에 3개, K에 3개(합판 위에서 K로).'});
+  }
+  S.push({title:'기둥을 발판에 세우기 (두 개)',show:[],add:['P0'],fas:['P0'],cam:'post',from:[0,0,0],
+    parts:'기둥 A 2개, 발판 F 2개',
+    how:`발판 F(${f(p.FOOT)}mm)의 길이 가운데에 선을 긋고, 그 선 위에 기둥 A의 직각 끝을 세웁니다. 기둥의 넓은 면(89mm)이 발판 폭과 나란하고 양옆이 발판과 일치해야 합니다. 발판을 옆으로 눕혀 놓고 작업하면 쉽습니다.`,
+    glue:'기둥 밑 마구리에 바릅니다.',
+    hole:'발판 밑면에서 가운데 선 위, 폭 양끝에서 22mm 안쪽 두 곳에 3mm로 발판을 관통하고 기둥 속 25mm까지. 밑면 입구는 카운터싱크를 깊게 내어 나사 머리가 바닥을 긁지 않게 합니다.',
+    screw:'4×65 4개. 발판 밑에서 기둥 마구리로 2개씩.'});
+  S.push({title:'가새 붙이기',show:['P0'],add:['P1'],fas:['P1'],cam:'post',from:'z',
+    parts:'가새 G 4개',
+    how:'기둥 앞뒤로 가새 G를 하나씩 댑니다. 한쪽 사선 면은 기둥에, 다른 사선 면은 발판 윗면에 딱 붙고, 가새는 기둥 폭의 가운데에 옵니다. 직각자로 기둥이 발판과 90°인지 확인한 뒤 박습니다.',
+    glue:'가새의 양쪽 사선 면에 바릅니다.',
+    hole:'가새의 긴 변에서 사선 면에 직각이 되게(45° 기울여) 3mm로 뚫습니다. 기둥 쪽 끝 가까이 2곳, 발판 쪽 끝 가까이 2곳.',
+    screw:'4×65 16개. 가새마다 4개(기둥으로 2개, 발판으로 2개).'});
+  S.push({title:'세우고 뒤 연결대 달기',show:PO,add:['R'],fas:['R'],cam:'all',from:[0,240,0],
+    parts:'뒤 연결대 H',
+    how:'기둥 두 개를 바깥면 간격 1,000mm로 세웁니다. 기둥 윗면 경사의 높은 쪽이 서로 마주 보게(안쪽) 놓습니다. 연결대 H를 두 발판의 뒤쪽 끝 위에 얹고 양끝을 발판 바깥면에 맞춥니다.',
+    glue:NOGLUE,
+    hole:'H 위에서 3mm로 H를 관통하고 발판 속 20mm까지. 양끝에 2곳씩.',
+    screw:'4×65 4개. H 위에서 발판으로 2개씩.'});
+  S.push({title:frame+' 올리고 볼트 조이기',show:PO.concat(['R']),add:TR.concat(RX,['BOLT']),fas:[],cam:'all',from:[0,340,0],
+    parts:(n===2?'지붕(중심 틀과 사다리)':frame)+`, M8×${p.bolt.len} 볼트 4개, 와셔 8개, 나비너트 4개`,
+    how:(tri?`${n===2?'두 사람이 지붕을 들어':'틀을 들어'} 기둥 윗부분이 틈에 들어가게 내려 끼웁니다. `:'뼈대를 기둥 앞면에 겹쳐 댑니다. 서까래가 앞, 기둥이 뒤, 가로대는 두 기둥 사이에 옵니다. ')+`기둥 윗면이 서까래 윗면보다 14mm쯤 아래, 서까래 끝에서 기둥 바깥면까지 수평 ${gap}mm가 되면 클램프로 물립니다. 구멍을 뚫고 볼트를 조입니다.`,
+    glue:NOGLUE,
+    hole:`8mm 비트로 ${layers}을 한 번에 곧게 뚫습니다. 위치는 기둥 양쪽 모서리에서 22mm 안쪽 두 곳, 기둥 윗 경사면에서 33mm 아래. 뒤쪽에 자투리 나무를 대고 뚫으면 구멍 끝이 뜯기지 않습니다.`,
+    screw:'나사 없음. 볼트 머리 → 와셔 → 목재 → 와셔 → 나비너트 순서로 끼우고 손으로 단단히 조입니다.'});
+  if(n>=3)S.push({title:'지붕판 얹기',show:PO.concat(['R','BOLT'],TR),add:['N0','N1'],fas:['MOUNT'],cam:'rooftop',from:[0,320,0],
+    parts:'지붕판 2장',
+    how:n===3?'지붕판을 위에서 내려 K 두 줄 사이에 중심 틀이 들어가게 얹고, 윗변을 꼭대기에 맞춥니다.':'지붕판을 위에서 내려 K가 서까래 앞면에 닿게 얹고, 윗변을 꼭대기에 맞춥니다. 서까래는 합판 앞쪽 변에서 143~181mm 사이에 있습니다.',
+    glue:NOGLUE,
+    hole:'합판 위에서 3mm로 합판을 관통하고 서까래 속 20mm까지.',
+    screw:n===3?'4×40 8개. 한 장에 4개씩, 합판 위에서 중심 틀 서까래 두 줄로.':'4×40 6개. 한 장에 3개씩, 합판 위에서 중심 서까래로.'});
+  return S;
+}
+const COMMON=['지붕 틀의 틈(또는 겹치는 면)과 기둥은 빡빡하게 맞습니다. 틀을 만들 때 기둥 자투리에 명함 한 장을 겹쳐 끼운 채로 나사를 박으면 나중에 잘 들어갑니다.','나사 자리는 3mm 드릴로 미리 뚫어야 끝 부분이 갈라지지 않습니다. 볼트 구멍은 8mm로 딱 맞게 뚫어야 좌우 흔들림이 적습니다.','가로대 밑 높이 1,061mm, 기둥 안쪽 폭 822mm입니다. 십자가는 가로대에 겁니다.','전구, 가랜드, 리스, 랜턴 정도의 가벼운 장식용입니다. 사람이 기대거나 매달리면 안 됩니다. 아이들이 많이 오가는 자리라면 발판 뒤쪽에 모래주머니를 올리거나 연결대를 벽에 끈으로 묶어 두세요.'];
+
+/* ---------- 도면 도우미 ---------- */
+const ext=(pts,i)=>[Math.min(...pts.map(p=>p[i])),Math.max(...pts.map(p=>p[i]))];
+function proj(p,view){
+  if(view==='front'){
+    if(p.plane==='xy') return {pts:p.pts,depth:p.t1};
+    if(p.plane==='zy'){const [y0,y1]=ext(p.pts,1);return {pts:rect(p.t0,y0,p.t1,y1),depth:ext(p.pts,0)[1]};}
+    const [x0,x1]=ext(p.pts,0);return {pts:rect(x0,p.t0,x1,p.t1),depth:ext(p.pts,1)[1]};
+  }
+  if(p.plane==='zy') return {pts:p.pts,depth:p.t1};
+  if(p.plane==='xy'){const [y0,y1]=ext(p.pts,1);return {pts:rect(p.t0,y0,p.t1,y1),depth:ext(p.pts,0)[1]};}
+  const [z0,z1]=ext(p.pts,1);return {pts:rect(z0,p.t0,z1,p.t1),depth:ext(p.pts,0)[1]};
+}
+const poly=(pts,cls)=>`<polygon class="${cls}" points="${pts.map(([x,y])=>x.toFixed(1)+','+(-y).toFixed(1)).join(' ')}"/>`;
+const ln=(x1,y1,x2,y2,cls='d')=>`<line class="${cls}" x1="${x1}" y1="${-y1}" x2="${x2}" y2="${-y2}"/>`;
+function dimH(x1,x2,y,label,e1,e2,fs){const k=14;
+  return ln(x1,y,x2,y)+ln(x1,y-k,x1,y+k)+ln(x2,y-k,x2,y+k)
+   +(e1!=null?ln(x1,e1,x1,y):'')+(e2!=null?ln(x2,e2,x2,y):'')
+   +`<text class="dt" ${fs?`style="font-size:${fs}px"`:''} x="${(x1+x2)/2}" y="${-y-16}">${label}</text>`;}
+function dimV(y1,y2,x,label,e1,e2){const k=14,my=-(y1+y2)/2;
+  return ln(x,y1,x,y2)+ln(x-k,y1,x+k,y1)+ln(x-k,y2,x+k,y2)
+   +(e1!=null?ln(e1,y1,x,y1):'')+(e2!=null?ln(e2,y2,x,y2):'')
+   +`<text class="dt" transform="translate(${x-16},${my}) rotate(-90)">${label}</text>`;}
+const drawView=(view,parts)=>parts.map(p=>proj(p,view)).sort((m,n)=>m.depth-n.depth).map(o=>poly(o.pts,'w')).join('');
+const VB_Y=-(H+180), VB_H=H+180+250;
+
+function frontSVG(p){
+  const fullW=2*p.HALF, tipY=pt(p.LP,0)[1];
+  let g=ln(-960,0,960,0,'ground')+drawView('front',p.P);
+  boltXY.forEach(([x,y])=>{g+=`<circle class="bolt" cx="${x}" cy="${-y}" r="9"/><circle class="bolt" cx="${-x}" cy="${-y}" r="9"/>`;});
+  g+=dimH(-fullW/2,fullW/2,H+90,f(fullW),tipY,tipY);
+  g+=dimH(-POUT,POUT,-90,'기둥 바깥 1,000',0,0);
+  g+=dimH(-PIN,PIN,250,'안쪽 '+f(2*PIN));
+  g+=dimV(0,p.HT,-880,f(p.HT),-fullW/2-20,-10);
+  g+=dimV(0,p.eb[1],-790,'처마 밑 '+f(p.eb[1]),-POUT-10,-p.eb[0]);
+  g+=dimV(0,PTOP,860,'기둥 끝 '+f(PTOP),POUT+10,PIN);
+  g+=dimV(0,CY0,160,'가로대 밑 '+f(CY0),null,null);
+  const q=pt(380,0);
+  g+=`<text class="nt" x="${q[0]+40}" y="${-q[1]-40}" transform="rotate(${PITCH} ${q[0]+40} ${-q[1]-40})">경사 22.5°</text>`;
+  return `<svg viewBox="-1000 ${VB_Y} 2000 ${VB_H}" role="img" aria-label="정면도">${g}</svg>`;
+}
+function sideSVG(p){
+  const rz=p.P.filter(q=>q.plane==='xy'&&q.grp!=='pl'&&q.grp!=='pr');
+  const z0=Math.min(...rz.map(q=>q.t0)), z1=Math.max(...rz.map(q=>q.t1));
+  let g=ln(-480,0,480,0,'ground')+drawView('side',p.P);
+  g+=dimH(-p.FOOT/2,p.FOOT/2,-90,'발판 '+f(p.FOOT),0,0);
+  g+=dimH(z0,z1,H+90,'지붕 '+f(z1-z0),p.HT,p.HT);
+  g+=dimV(0,p.HT,-410,f(p.HT),-p.FOOT/2,z0);
+  g+=`<text class="nt" x="-150" y="-170">연결대 H</text>`+ln(-205,150,-p.FOOT/2+30,2*T+6,'d');
+  return `<svg viewBox="-520 ${VB_Y} 1040 ${VB_H}" role="img" aria-label="측면도">${g}</svg>`;
+}
+function roofSVG(p){
+  let solid='',dash='',labs='';const seen={};
+  const lab=(x,y,tx)=>`<text class="nt" style="font-size:28px" x="${x}" y="${-y+10}">${tx}</text>`;
+  p.P.filter(q=>q.plane==='xy'&&q.k!=='A').forEach(q=>{
+    const id=q.k+q.pts.map(v=>v.map(Math.round)).join('|'); if(seen[id])return; seen[id]=1;
+    const mid=q.t0<=0&&q.t1>=0;
+    if(mid) solid+=poly(q.pts,'w'); else dash+=poly(q.pts,'hid');
+    if(q.k==='B'||q.k==='L'||q.k==='M')return;
+    const cx=q.pts.reduce((n,v)=>n+v[0],0)/q.pts.length, cy=q.pts.reduce((n,v)=>n+v[1],0)/q.pts.length;
+    labs+=lab(cx,cy,q.k==='C'?'C 가로대':q.k);
+  });
+  const postTop=[[PIN,900],[POUT,900],[POUT,PTOP-W*t],[PIN,PTOP]];
+  let g=solid+poly(postTop,'w')+poly(mx(postTop),'w')+dash;
+  boltXY.forEach(([x,y])=>{g+=`<circle class="bolt" cx="${x}" cy="${-y}" r="8"/><circle class="bolt" cx="${-x}" cy="${-y}" r="8"/>`;});
+  g+=labs+lab(455,940,'A')+lab(-455,940,'A');
+  const p1=pt(0,-46),p2=pt(p.LP,-46),m=[(p1[0]+p2[0])/2,(p1[1]+p2[1])/2];
+  const tx=p.n===3?`합판 L ${p.LP} · 서까래 B ${p.RL}`:p.n===4?`합판 L · 옆 테 M ${p.LP} · 중심 서까래 B ${p.RL}`:`서까래 B 긴 쪽 ${p.RL}`;
+  g+=ln(p1[0],p1[1],p2[0],p2[1])+`<text class="dt" style="font-size:28px" transform="translate(${m[0]},${-m[1]-12}) rotate(${PITCH})">${tx}</text>`;
+  g+=dimV(CY0,H,0,'',null,null)+`<text class="dt" style="font-size:28px" x="74" y="-1180">239</text>`;
+  g+=dimH(POUT,p.HALF,880,f(p.HALF-POUT),PTOP-W*t,pt(p.LP,0)[1],28);
+  g+=dimH(-CHALF,CHALF,CY0-40,'705',null,null,28);
+  return `<svg viewBox="-800 ${-(H+110)} 1600 540" role="img" aria-label="지붕 단면도">${g}</svg>`;
+}
+function shapePts(i){const L=i.len,hh=i.h||W;return {L,hh,x0:hh*Math.tan((i.a1||0)*R),x1:L-hh*Math.tan((i.a2||0)*R)};}
+function cutTable(p){
+  let h='<tr><th>기호</th><th>부재</th><th>재료</th><th class="r">수량</th><th class="r">긴 쪽</th><th class="r">짧은 쪽</th><th>끝 가공</th><th>모양</th></tr>',cnt=0;const tot={};
+  Object.entries(p.INFO).forEach(([k,i])=>{const {L,hh,x0,x1}=shapePts(i);
+    const sc=Math.min(hh>100?0.07:0.2,220/L);
+    const shp=`<svg viewBox="-2 -2 ${L+4} ${hh+4}" style="width:${Math.max(L*sc,24)}px;height:${Math.max(hh*sc,7)}px" preserveAspectRatio="none"><polygon class="w" style="stroke-width:${1.5/sc}" points="0,${hh} ${L},${hh} ${x1},0 ${x0},0"/></svg>`;
+    cnt+=i.qty; if(hh<=100)tot[i.mat]=(tot[i.mat]||0)+L*i.qty;
+    h+=`<tr><td><span class="tag" data-k="${k}">${k}</span></td><td>${i.name}</td><td>${i.mat}</td><td class="r num">${i.qty}</td><td class="r num">${f(L)}</td><td class="r num">${i.short!=null?f(i.short):'–'}</td><td>${i.cut}</td><td class="shape">${shp}</td></tr>`;});
+  h+=`<tr><td></td><td><strong>합계</strong></td><td></td><td class="r num"><strong>${cnt}</strong></td><td colspan="4">총 사용 길이: ${Object.entries(tot).map(([m,v])=>m+' '+f(v)).join(', ')}</td></tr>`;
+  return {html:h,cnt};
+}
+function pieceSVGs(p){
+  return Object.entries(p.INFO).map(([k,i])=>{const {L,hh,x0,x1}=shapePts(i);
+    const ply=hh>100, sc=ply?0.2:0.25, mT=70, mB=70, mS=Math.max(30,(600-L)/2), vw=L+2*mS, vh=hh+mT+mB, fs=ply?52:42;
+    let g=`<polygon class="w" points="${mS},${mT+hh} ${mS+L},${mT+hh} ${mS+x1},${mT} ${mS+x0},${mT}"/>`;
+    const dh=(xa,xb,y,tx,up)=>`<line class="d" x1="${xa}" y1="${y}" x2="${xb}" y2="${y}"/><line class="d" x1="${xa}" y1="${y-12}" x2="${xa}" y2="${y+12}"/><line class="d" x1="${xb}" y1="${y-12}" x2="${xb}" y2="${y+12}"/><text class="dt" style="font-size:${fs}px" x="${(xa+xb)/2}" y="${up?y-14:y+fs}">${tx}</text>`;
+    g+=dh(mS,mS+L,mT+hh+18,f(L)+(i.short!=null&&L>300?' (긴 쪽)':''),false);
+    if(i.short!=null) g+=dh(mS+x0,mS+x1,mT-18,f(i.short)+(L>300?' (짧은 쪽)':''),true);
+    if(ply) g+=`<text class="nt" style="font-size:${fs}px" x="${vw/2}" y="${mT+hh/2+16}">${hh} × ${L}</text>`;
+    const ang=[i.a1,i.a2].filter(Boolean);
+    return `<div class="piece"><div class="cap"><span class="tag" data-k="${k}">${k}</span> ${i.name} · ${i.mat} · ${i.qty}개${ang.length?' · 사선 '+ang.join('° / ')+'°':''}</div><svg viewBox="0 0 ${vw} ${vh}" style="width:${vw*sc}px"><g>${g}</g></svg></div>`;
+  }).join('');
+}
+function cutOrder(p){
+  const g={sq:[],a22:[],a45:[],ply:[]};
+  Object.entries(p.INFO).forEach(([k,i])=>{const s=`${k} ${i.name} ${f(i.len)} × ${i.qty}`;
+    if((i.h||W)>100)g.ply.push(s);else if(i.a2===22.5)g.a22.push(s);else if(i.a1===45||i.a2===45)g.a45.push(s);else g.sq.push(s);});
+  let h='<ol>';
+  h+=`<li><strong>톱 0° (직각).</strong> ${g.sq.join(', ')}. 재단 서비스에 맡길 수 있는 조각입니다.</li>`;
+  h+=`<li><strong>톱 22.5°.</strong> ${g.a22.join(', ')}. 원목 배치 순서대로 직각으로 먼저 길이를 끊은 뒤 한쪽 끝만 22.5°로 다시 자르면 실수가 적습니다. 사선은 긴 쪽 끝점에서 시작해 안쪽으로 들어갑니다.</li>`;
+  h+=`<li><strong>톱 45°.</strong> ${g.a45.join(', ')}. D는 한쪽만, G는 양쪽을 서로 반대 방향으로 자릅니다.</li>`;
+  if(g.ply.length)h+=`<li><strong>합판.</strong> ${g.ply.join(', ')}. 재단 주문을 권합니다. 받은 뒤 테두리를 사포로 다듬습니다.</li>`;
+  return h+'</ol>';
+}
+function stockHTML(p){
+  const KERF=3,STOCK=3600,cnt={};
+  return p.boards.map(([mat,items])=>{cnt[mat]=(cnt[mat]||0)+1;const bd=items.split('');
+    const used=bd.reduce((n,k)=>n+p.INFO[k].len,0)+KERF*bd.length;
+    return `<div class="board"><div class="cap"><span>${mat} ${cnt[mat]}번 · 3,600</span><span class="num">남는 길이 ${f(STOCK-used)}</span></div><div class="strip">`
+      +bd.map(k=>`<div class="seg" style="flex:0 0 ${(p.INFO[k].len/STOCK*100).toFixed(2)}%" title="${p.INFO[k].name} ${f(p.INFO[k].len)}">${k}${p.INFO[k].len>=240?' '+f(p.INFO[k].len):''}</div>`).join('')
+      +`</div></div>`;}).join('');
+}
+function planHTML(p){
+  const x=TXT[p.n], ct=cutTable(p);
+  return `
+  <div class="planhead"><h2>${x.title}</h2><p class="lead">${x.lead}</p>
+    <div class="facts"><span>전체 폭 <b>${f(2*p.HALF)}</b></span><span>높이 <b>${f(p.HT)}</b></span><span>지붕 깊이 <b>${f(p.DEPTH)}</b></span><span>바닥 깊이 <b>${f(p.FOOT)}</b></span><span>경사 <b>22.5°</b></span><span>재료 <b>${x.mats}</b></span><span>조각 <b>${ct.cnt}</b></span><span>무게 <b>${x.weight}</b></span></div></div>
+  <div class="blk"><h3>설계 도면</h3>${x.design.map(d=>`<p>${d}</p>`).join('')}
+    <div class="scroll"><div class="views"><figure><figcaption>정면도</figcaption>${frontSVG(p)}</figure><figure><figcaption>측면도</figcaption>${sideSVG(p)}</figure></div></div>
+    <div class="scroll"><figure class="fig" style="min-width:640px"><figcaption>지붕 단면 (기둥이 있는 층을 본 모습. 점선은 그 앞뒤에 있는 부재)</figcaption>${roofSVG(p)}</figure></div></div>
+  <div class="blk"><h3>재단표</h3><p>길이는 모두 긴 쪽 기준입니다. 2×4는 실치수 38×89, 2×2는 38×38입니다.</p><div class="scroll"><table>${ct.html}</table></div></div>
+  <div class="blk"><h3>절단 가이드</h3><p>조각별 모양과 치수입니다. 아래쪽 치수가 재서 표시할 긴 쪽 길이입니다.</p><div class="pieces">${pieceSVGs(p)}</div>
+    <h4>자르는 순서</h4>${cutOrder(p)}</div>
+  <div class="blk"><h3>원목 배치</h3><p>톱날 두께 3mm를 반영한 배치입니다. 왼쪽부터 차례로 자릅니다.</p><div class="stock">${stockHTML(p)}</div></div>
+  <div class="blk"><h3>주문 목록</h3><div class="scroll"><table><tr><th>품목</th><th>규격</th><th class="r">수량</th><th>용도</th></tr>
+    ${x.order.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="r num">${r[2]}</td><td>${r[3]}</td></tr>`).join('')}
+    <tr><td>사포</td><td class="num">#120, #240</td><td class="r num">각 2장</td><td>모서리와 절단면</td></tr></table></div>
+    <p class="note">구조목 실치수는 업체마다 1mm 안팎 차이가 있습니다. 받은 뒤 두께를 재 보고 38이 아니면 기둥이 끼워지는 틈도 그 두께에 맞추세요. 드릴 비트, 클램프, 타카 같은 공구와 공통 부재료는 맨 끝의 공구와 부재료에 있습니다.</p></div>
+  <div class="blk"><h3>조립 순서</h3><p>그림에서 주황색이 이번 단계에 붙이는 조각이고, 색 점이 나사 자리입니다. 빨강은 4×65, 청록은 4×40, 보라는 4.5×90입니다. 화면에서는 단계마다 3D로 재생해 볼 수 있습니다.</p>
+    <div class="steps"><div class="step"><div class="sb"><h4>준비. 재단</h4><p>재단표와 절단 가이드대로 자르고, 조각마다 기호를 적고, 절단면과 모서리를 사포로 다듬습니다. 스테인을 바를 생각이면 지금 바릅니다.</p></div></div>
+    ${p.steps.map((st,i)=>`<div class="step"><img class="simg" data-step="${p.n}-${i}" alt="${i+1}단계 그림"><div class="sb"><h4>${i+1}. ${st.title}</h4><p>${st.how}</p><dl><dt>조각</dt><dd>${st.parts}</dd><dt>본드</dt><dd>${st.glue}</dd><dt>구멍</dt><dd>${st.hole}</dd><dt>고정</dt><dd>${st.screw}</dd></dl><button class="noprint" data-play="${p.n}-${i}">이 단계 3D로 재생</button></div></div>`).join('')}</div>
+    <p class="note">${x.undo} 보관 크기: ${x.store}</p></div>
+  <div class="blk"><h3>알아둘 점</h3><ul>${x.notes.concat(COMMON).map(n=>`<li>${n}</li>`).join('')}</ul></div>`;
+}
+
+/* ---------- 렌더 ---------- */
+const PLANS=[1,2,3,4].map(build); PLANS.forEach(p=>{p.steps=stepsFor(p);});
+const host=document.getElementById('plans'), tabs=document.getElementById('tabs');
+document.getElementById('compare').innerHTML='<tr><th>안</th><th>특징</th><th class="r">폭 × 높이 × 지붕 깊이</th><th>재료</th><th class="r">조각</th><th class="r">무게</th><th>난이도</th></tr>'
+ +PLANS.map(p=>{const x=TXT[p.n];return `<tr><td><strong>${x.title}</strong></td><td>${x.feat}</td><td class="r num">${f(2*p.HALF)} × ${f(p.HT)} × ${f(p.DEPTH)}</td><td>${x.mats}</td><td class="r num">${Object.values(p.INFO).reduce((n,i)=>n+i.qty,0)}</td><td class="r num">${x.weight}</td><td>${x.level}</td></tr>`;}).join('');
+PLANS.forEach(p=>{const el=document.createElement('section');el.className='plan off';el.id='p'+p.n;el.innerHTML=planHTML(p);host.appendChild(el);
+  const b=document.createElement('button');b.textContent=TXT[p.n].title;b.id='tab-'+p.n;b.setAttribute('role','tab');b.onclick=()=>show(p.n,true);tabs.appendChild(b);});
+let current=0, colored=false, on3d=null, playStep=null;
+function show(n,setHash){ if(n===current)return; current=n;
+  PLANS.forEach(p=>{document.getElementById('p'+p.n).classList.toggle('off',p.n!==n);document.getElementById('tab-'+p.n).setAttribute('aria-pressed',p.n===n);});
+  if(setHash){try{history.replaceState(null,'','#plan-'+n);}catch(e){}}
+  if(on3d)on3d(PLANS[n-1]); paintTags();
+}
+function paintTags(){document.querySelectorAll('.tag[data-k]').forEach(el=>{const k=el.dataset.k;el.style.background=colored?HUE[k]:'';el.style.color=colored?'#fff':'';});}
+const fromHash=()=>{const m=/^#plan-([1-4])$/.exec(location.hash);return m?+m[1]:0;};
+window.addEventListener('hashchange',()=>{const n=fromHash();if(n)show(n,false);});
+
+/* ---------- 3D ---------- */
+(function(){
+const tip=document.getElementById('tip'), TIP0='부재에 마우스를 올리거나 누르면 모양과 치수가 보입니다';
+const noImgs=()=>document.querySelectorAll('img.simg').forEach(i=>i.remove());
+if(!window.THREE){tip.textContent='3D 라이브러리를 불러오지 못했습니다. 아래 도면은 그대로 볼 수 있습니다.';noImgs();return;}
+const cv=document.getElementById('view3d');
+let renderer;try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});}catch(e){tip.textContent='이 기기에서는 3D를 표시할 수 없습니다. 아래 도면은 그대로 볼 수 있습니다.';noImgs();return;}
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const CAMS={all:[[800,900,2550],[0,660,0]],roof:[[420,1390,1620],[0,1130,0]],roofback:[[-420,1390,-1620],[0,1130,0]],rooftop:[[560,2120,1420],[0,1120,0]],post:[[1250,780,1700],[0,440,0]]};
+const HL='#f2a03d', MK={'65':0xe4572e,'40':0x1c9c8a,'90':0x7a4cc2};
+const edgeMat=new THREE.LineBasicMaterial({color:0x5b4424}), steel=new THREE.MeshStandardMaterial({color:0x9aa3a8,metalness:.7,roughness:.35,transparent:true});
+function lights(sc){sc.add(new THREE.HemisphereLight(0xffffff,0x8a7a66,0.78));const d=new THREE.DirectionalLight(0xfff2dc,0.72);d.position.set(900,1800,1600);sc.add(d);const b=new THREE.DirectionalLight(0xffffff,0.3);b.position.set(-900,900,-1600);sc.add(b);}
+function partMeshes(p){return p.P.map(q=>{
+  const sh=new THREE.Shape(), pp=q.plane==='zy'?q.pts.map(([z,y])=>[-z,y]):q.pts;
+  pp.forEach(([u,v],i)=>i?sh.lineTo(u,v):sh.moveTo(u,v));
+  const geo=new THREE.ExtrudeGeometry(sh,{depth:q.t1-q.t0,bevelEnabled:false}), base=q.k==='L'?'#e8d3a6':'#dcb87c';
+  const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:base,roughness:.85,transparent:true}));
+  if(q.plane==='xy')m.position.z=q.t0; else if(q.plane==='zy'){m.rotation.y=Math.PI/2;m.position.x=q.t0;} else{m.rotation.x=Math.PI/2;m.position.y=q.t1;}
+  m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo,20),edgeMat));
+  const zc=q.plane==='xy'?(q.t0+q.t1)/2:q.plane==='zy'?q.pts.reduce((n,v)=>n+v[0],0)/q.pts.length:q.pts.reduce((n,v)=>n+v[1],0)/q.pts.length;
+  m.userData={k:q.k,base,st:q.st,grp:q.grp,zc,home:m.position.clone()};return m;});}
+function boltMeshes(p){const out=[];[1,-1].forEach(sd=>boltXY.forEach(([x,y])=>{const L=p.bolt.len;
+  const bm=new THREE.Mesh(new THREE.CylinderGeometry(4,4,L,12),steel);bm.rotation.x=Math.PI/2;bm.position.set(sd*x,y,p.bolt.z+2);
+  const hd=new THREE.Mesh(new THREE.CylinderGeometry(9,9,6,6),steel);hd.position.y=L/2;bm.add(hd);
+  const nt=new THREE.Mesh(new THREE.BoxGeometry(30,8,10),steel);nt.position.y=-L/2+2;bm.add(nt);
+  bm.userData={st:'BOLT',grp:'bolt',zc:0,home:bm.position.clone(),bolt:L};out.push(bm);}));return out;}
+function markers(list){const g=new THREE.Group(), up=new THREE.Vector3(0,1,0);
+  list.forEach(o=>{const mat=new THREE.MeshBasicMaterial({color:MK[o.t]}), d=new THREE.Vector3(...o.d).normalize(), P0=new THREE.Vector3(...o.p);
+    const hd=new THREE.Mesh(new THREE.SphereGeometry(13,12,10),mat);hd.position.copy(P0).addScaledVector(d,-6);g.add(hd);
+    const sh=new THREE.Mesh(new THREE.CylinderGeometry(3,3,46,8),mat);sh.position.copy(P0).addScaledVector(d,-30);sh.quaternion.setFromUnitVectors(up,d);g.add(sh);});
+  return g;}
+function applyStep(ms,st,prog,useHue){const e=1-Math.pow(1-Math.min(prog,1),3);
+  ms.forEach(m=>{const u=m.userData,isNew=st.add.includes(u.st);m.visible=isNew||st.show.includes(u.st);
+    const fv=isNew?(st.from==='z'?[0,0,(u.zc>=0?1:-1)*280]:st.from):[0,0,0];
+    m.position.set(u.home.x+fv[0]*(1-e),u.home.y+fv[1]*(1-e),u.home.z+fv[2]*(1-e));
+    if(u.k){m.material.color.set(useHue?HUE[u.k]:isNew?HL:'#d8d2c4');u.op=st.ghost===u.k?0.45:1;m.material.opacity=u.op;}});}
+function setCam(cam,name,ctl){const [a,b]=CAMS[name];cam.position.set(...a);if(ctl){ctl.target.set(...b);ctl.update();}else cam.lookAt(...b);}
+
+/* 단계 그림: 화면과 인쇄에 함께 쓴다 */
+(function snapshots(){
+  const c2=document.createElement('canvas');let r2;
+  try{r2=new THREE.WebGLRenderer({canvas:c2,antialias:true,preserveDrawingBuffer:true});}catch(e){noImgs();return;}
+  r2.setPixelRatio(1);r2.setSize(760,520,false);r2.setClearColor(0xf2f4f5,1);
+  const sc=new THREE.Scene(), cam2=new THREE.PerspectiveCamera(36,760/520,10,20000);lights(sc);
+  PLANS.forEach(p=>{const ms=partMeshes(p).concat(boltMeshes(p)), F=fasteners(p);ms.forEach(m=>sc.add(m));
+    p.steps.forEach((st,i)=>{applyStep(ms,st,1,false);const g=markers(st.fas.reduce((a,k)=>a.concat(F[k]||[]),[]));sc.add(g);
+      setCam(cam2,st.cam);r2.render(sc,cam2);
+      const img=document.querySelector(`img[data-step="${p.n}-${i}"]`);if(img)img.src=c2.toDataURL('image/jpeg',0.86);
+      sc.remove(g);});
+    ms.forEach(m=>{sc.remove(m);m.geometry.dispose();});});
+  r2.dispose();
+})();
+
+const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(36,1,10,20000), ctl=new THREE.OrbitControls(cam,cv);
+ctl.enableDamping=true;ctl.maxPolarAngle=Math.PI/2+0.05;ctl.minDistance=500;ctl.maxDistance=7000;cam.position.set(900,950,2900);ctl.target.set(0,640,0);ctl.update();
+lights(scene);
+const floor=new THREE.Mesh(new THREE.CircleGeometry(1050,64),new THREE.MeshStandardMaterial({color:0xcbb890,roughness:1,transparent:true,opacity:.5}));
+floor.rotation.x=-Math.PI/2;floor.position.y=-1;scene.add(floor);
+const OFF={roof:[0,260,0],nl:[-130,560,0],nr:[130,560,0],pl:[-170,0,0],pr:[170,0,0],rail:[0,0,-320],bolt:[0,260,440]};
+const groups={},cur={};Object.keys(OFF).forEach(k=>{groups[k]=new THREE.Group();scene.add(groups[k]);cur[k]=0;});
+const cross=new THREE.Group(), glow=new THREE.MeshStandardMaterial({color:0xffe2a8,emissive:0xffb347,emissiveIntensity:.9});
+const c1=new THREE.Mesh(new THREE.BoxGeometry(36,720,18),glow);c1.position.set(0,670,-40);
+const c2m=new THREE.Mesh(new THREE.BoxGeometry(400,36,18),glow);c2m.position.set(0,800,-40);cross.add(c1,c2m);scene.add(cross);
+let P=null, meshes=[], F={}, mk=null, exploded=false, crossOn=true, mode='full', si=0, prog=1, hot=null;
+const $=id=>document.getElementById(id), press=(b,v)=>b.setAttribute('aria-pressed',v);
+const nav=$('stepnav'), cap=$('stepcap');
+function restFull(){meshes.forEach(m=>{const u=m.userData;m.visible=true;m.position.copy(u.home);u.op=1;m.material.opacity=1;if(u.k)m.material.color.set(colored?HUE[u.k]:u.base);});
+  if(mk){scene.remove(mk);mk=null;} cross.visible=crossOn;}
+function goStep(i){si=Math.max(0,Math.min(P.steps.length-1,i));prog=0;const st=P.steps[si];
+  if(mk)scene.remove(mk);mk=markers(st.fas.reduce((a,k)=>a.concat(F[k]||[]),[]));mk.visible=false;scene.add(mk);
+  applyStep(meshes,st,0,colored);setCam(cam,st.cam,ctl);cross.visible=false;
+  cap.innerHTML=`<strong>${si+1} / ${P.steps.length} · ${st.title}</strong><span>${st.how}</span><span><b>본드</b> ${st.glue} <b>구멍</b> ${st.hole} <b>고정</b> ${st.screw}</span>`;
+  $('s-prev').disabled=si===0;$('s-next').disabled=si===P.steps.length-1;}
+function setMode(m,i){mode=m;press($('b-steps'),m==='step');nav.hidden=m!=='step';$('b-explode').disabled=m==='step';
+  $('b-steps').textContent=m==='step'?'전체 모습 보기':'조립 단계 재생';
+  if(m==='step'){exploded=false;press($('b-explode'),false);$('b-explode').textContent='분해해서 보기';goStep(i||0);}else{restFull();cam.position.set(900,950,2900);ctl.target.set(0,640,0);ctl.update();}}
+on3d=function(p){P=p;F=fasteners(p);hot=null;tip.textContent=TIP0;tip.classList.remove('card');
+  Object.values(groups).forEach(g=>{while(g.children.length){const m=g.children[0];g.remove(m);if(m.geometry)m.geometry.dispose();}});
+  meshes=partMeshes(p).concat(boltMeshes(p));meshes.forEach(m=>groups[m.userData.grp].add(m));
+  if(mode==='step')goStep(0);else restFull();};
+playStep=function(n,i){if(current!==n)show(n,true);setMode('step',i);document.querySelector('.stage').scrollIntoView({behavior:'smooth',block:'start'});};
+$('b-explode').onclick=e=>{exploded=!exploded;press(e.currentTarget,exploded);e.currentTarget.textContent=exploded?'조립해서 보기':'분해해서 보기';};
+$('b-color').onclick=e=>{colored=!colored;press(e.currentTarget,colored);paintTags();
+  if(mode==='step')applyStep(meshes,P.steps[si],prog,colored);else restFull();};
+$('b-cross').onclick=e=>{crossOn=!crossOn;cross.visible=crossOn&&mode==='full';press(e.currentTarget,crossOn);};
+$('b-reset').onclick=()=>{if(mode==='step')setCam(cam,P.steps[si].cam,ctl);else{cam.position.set(900,950,2900);ctl.target.set(0,640,0);ctl.update();}};
+$('b-steps').onclick=()=>setMode(mode==='step'?'full':'step',0);
+$('s-prev').onclick=()=>goStep(si-1);$('s-next').onclick=()=>goStep(si+1);$('s-replay').onclick=()=>goStep(si);
+
+function partCard(k){const i=P.INFO[k],{L,hh,x0,x1}=shapePts(i),th=i.mat==='합판 9T'?PLY:T;
+  const bw=Math.max(L,320),ox=70+(bw-L)/2,vw=bw+360,mT=80,mB=90,vh=hh+mT+mB,fs=vw/19;
+  const tx=(x,y,t0,an)=>`<text class="dt" style="font-size:${fs}px;text-anchor:${an||'middle'}" x="${x}" y="${y}">${t0}</text>`;
+  const hl=(xa,xb,y)=>`<line class="d" x1="${xa}" y1="${y}" x2="${xb}" y2="${y}"/><line class="d" x1="${xa}" y1="${y-14}" x2="${xa}" y2="${y+14}"/><line class="d" x1="${xb}" y1="${y-14}" x2="${xb}" y2="${y+14}"/>`;
+  let g=`<polygon class="w" style="stroke-width:${vw/260}" points="${ox},${mT+hh} ${ox+L},${mT+hh} ${ox+x1},${mT} ${ox+x0},${mT}"/>`;
+  g+=hl(ox,ox+L,mT+hh+26)+tx(ox+L/2,mT+hh+30+fs,'길이 '+f(L));
+  if(i.short!=null)g+=hl(ox+x0,ox+x1,mT-26)+tx(ox+(x0+x1)/2,mT-40,'짧은 쪽 '+f(i.short));
+  const vx=ox+L+34;g+=`<line class="d" x1="${vx}" y1="${mT}" x2="${vx}" y2="${mT+hh}"/><line class="d" x1="${vx-14}" y1="${mT}" x2="${vx+14}" y2="${mT}"/><line class="d" x1="${vx-14}" y1="${mT+hh}" x2="${vx+14}" y2="${mT+hh}"/>`+tx(vx+20,mT+hh/2+fs/3,'폭 '+hh,'start');
+  if(i.a2)g+=`<text class="nt" style="font-size:${fs}px;text-anchor:end" x="${ox+x1-10}" y="${mT+hh/2+fs/3}">${i.a2}° ◢</text>`;
+  if(i.a1)g+=`<text class="nt" style="font-size:${fs}px;text-anchor:start" x="${ox+x0+10}" y="${mT+hh/2+fs/3}">◣ ${i.a1}°</text>`;
+  return `<div class="ttl"><span class="tag" style="${colored?`background:${HUE[k]};color:#fff`:''}">${k}</span> ${i.name} <small>${i.mat} · ${i.qty}개</small></div><svg viewBox="0 0 ${vw} ${vh}">${g}</svg>`
+   +`<div class="tl"><span>길이 <b>${f(L)}</b></span>${i.short!=null?`<span>짧은 쪽 <b>${f(i.short)}</b></span>`:''}<span>폭 <b>${hh}</b></span><span>두께 <b>${th}</b></span><span>끝 <b>${i.cut}</b></span></div>`;}
+const ray=new THREE.Raycaster(),mp=new THREE.Vector2();
+function pick(e){const r=cv.getBoundingClientRect();
+  mp.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(mp,cam);
+  const hit=ray.intersectObjects(meshes.filter(m=>m.visible),false)[0],m=hit?hit.object:null;
+  if(m===hot)return; hot=m;
+  meshes.forEach(o=>{const u=o.userData;if(u.k){o.material.emissive.set(o===m?0x4a3206:0);o.material.opacity=m&&o!==m?Math.min(u.op||1,0.22):(u.op||1);}else o.material&&(o.material.opacity=1);});
+  if(m&&m.userData.k){tip.innerHTML=partCard(m.userData.k);tip.classList.add('card');}
+  else{tip.classList.remove('card');tip.textContent=m?`M8×${m.userData.bolt} 볼트 + 와셔 2 + 나비너트 (총 4세트)`:TIP0;}}
+cv.addEventListener('pointermove',pick);cv.addEventListener('pointerdown',pick);cv.addEventListener('pointerleave',()=>pick({clientX:-9999,clientY:-9999}));
+function size(){const w=cv.clientWidth,h=cv.clientHeight,pr=renderer.getPixelRatio();if(w&&h&&(cv.width!==Math.round(w*pr)||cv.height!==Math.round(h*pr))){renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();}}
+let last=performance.now();
+(function tick(now){const dt=Math.min(0.05,((now||last)-last)/1000);last=now||last;size();
+  Object.keys(OFF).forEach(k=>{cur[k]+=((exploded&&mode==='full'?1:0)-cur[k])*.12;const o=OFF[k],e=cur[k];groups[k].position.set(o[0]*e,o[1]*e,o[2]*e);});
+  if(mode==='step'&&prog<1.4){prog+=dt/1.3;applyStep(meshes,P.steps[si],prog,colored);if(hot)meshes.forEach(o=>{if(o.userData.k&&o!==hot)o.material.opacity=Math.min(o.userData.op||1,0.22);});if(mk)mk.visible=prog>=1;}
+  ctl.update();renderer.render(scene,cam);requestAnimationFrame(tick);})();
+})();
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-play]');if(b&&playStep){const [n,i]=b.dataset.play.split('-').map(Number);playStep(n,i);}});
+show(fromHash()||4,false);
+})();
+</script>
+
+</body>
+</html>
